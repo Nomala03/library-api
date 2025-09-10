@@ -25,7 +25,6 @@ export interface Book {
 export const authors: Author[] = [];
 export const books: Book[] = [];
 
-/** helper to create ids when creating sample/demo data */
 export function createAuthor(data: Omit<Author, "id">): Author {
   return { id: nanoid(), ...data };
 }
