@@ -1,9 +1,8 @@
 import { Response } from "express";
 import { ZodError } from "zod";
 
-/**
- * Custom error shapes used by routes
- */
+// Custom error shapes used by routes
+ 
 export class NotFoundError extends Error {
   status = 404;
   constructor(message = "Not Found") { super(message); this.name = "NotFoundError"; }
@@ -17,9 +16,8 @@ export class ConflictError extends Error {
   constructor(message = "Conflict") { super(message); this.name = "ConflictError"; }
 }
 
-/**
- * Centralized handler function used in index.ts
- */
+// Centralized handler function used in index.ts
+
 export function errorHandler(err: any, res: Response) {
   if (!err) return res.status(500).json({ error: "Unknown error" });
 

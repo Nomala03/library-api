@@ -1,13 +1,13 @@
-import express from "express";
-import { books, authors, createBook } from "../models";
+import express, { Request, Response, NextFunction } from "express";
+import { books, authors, createBook, Book } from "../models";
 import { validate } from "../middleware/validate";
 import { createBookSchema, updateBookSchema } from "../validators";
 import { NotFoundError, BadRequestError, ConflictError } from "../middleware/errorHandler";
 
 const router = express.Router();
 
-//Helper: normalize a book's year (if publishedAt provided)
-function extractYear(book: any) {
+// Helper: normalize a book's year (if publishedAt provided)
+function extractYear(book: Partial<Book>): number | undefined {
   if (book.publishedAt) {
     const y = new Date(book.publishedAt).getFullYear();
     if (!Number.isNaN(y) && isFinite(y)) return y;
@@ -15,13 +15,10 @@ function extractYear(book: any) {
   return book.year ?? undefined;
 }
 
-
-// Create New Book
-// Conflict if same title + same authorId already exists (case-insensitive title)
- 
-router.post("/", validate(createBookSchema), (req, res, next) => {
+// CREATE BOOK
+router.post("/", validate(createBookSchema), (req: Request, res: Response, next: NextFunction) => {
   try {
-    const payload = req.body as any;
+    const payload = req.body as Omit<Book, "id">;
 
     // ensure author exists
     const author = authors.find((a) => a.id === payload.authorId);
@@ -41,16 +38,8 @@ router.post("/", validate(createBookSchema), (req, res, next) => {
   }
 });
 
-/*
-  List All Books
-  Query params:
-   - title (partial, case-insensitive)
-   - author (author id OR name, partial case-insensitive)
-   - year (exact numeric)
-   - page, limit (pagination)
-   - sort (title|year|publishedAt), order (asc|desc)
- */
-router.get("/", (req, res) => {
+// LIST ALL BOOKS 
+router.get("/", (req: Request, res: Response) => {
   let results = [...books];
 
   const { title, author: authorQ, year, page, limit, sort, order } = req.query;
@@ -62,9 +51,10 @@ router.get("/", (req, res) => {
 
   if (authorQ && typeof authorQ === "string") {
     const q = authorQ.toLowerCase();
-    // match by authorId first, otherwise by author name partial
+    const authorIdNum = parseInt(authorQ, 10);
+
     results = results.filter((b) => {
-      if (b.authorId === authorQ) return true;
+      if (!Number.isNaN(authorIdNum) && b.authorId === authorIdNum) return true;
       const a = authors.find((x) => x.id === b.authorId);
       if (!a) return false;
       return a.name.toLowerCase().includes(q);
@@ -80,9 +70,9 @@ router.get("/", (req, res) => {
 
   // sorting
   if (sort && typeof sort === "string") {
-    const key = sort;
-    const dir = (order === "desc" ? -1 : 1);
-    results.sort((a: any, b: any) => {
+    const key = sort as keyof Book;
+    const dir = order === "desc" ? -1 : 1;
+    results.sort((a, b) => {
       const va = a[key] ?? "";
       const vb = b[key] ?? "";
       if (va < vb) return -1 * dir;
@@ -110,23 +100,25 @@ router.get("/", (req, res) => {
     total: results.length,
     page: pageNum,
     limit: limitNum,
-    items: paged
+    items: paged,
   });
 });
 
-// Get Book By ID
-router.get("/:id", (req, res, next) => {
-  const book = books.find((b) => b.id === req.params.id);
+// GET BOOK BY ID 
+router.get("/:id", (req: Request, res: Response, next: NextFunction) => {
+  const id = parseInt(req.params.id, 10);
+  const book = books.find((b) => b.id === id);
   if (!book) return next(new NotFoundError("Book not found"));
   res.json(book);
 });
 
-// Update Book (validate payload)
-router.put("/:id", validate(updateBookSchema), (req, res, next) => {
-  const idx = books.findIndex((b) => b.id === req.params.id);
+// UPDATE BOOK
+router.put("/:id", validate(updateBookSchema), (req: Request, res: Response, next: NextFunction) => {
+  const id = parseInt(req.params.id, 10);
+  const idx = books.findIndex((b) => b.id === id);
   if (idx === -1) return next(new NotFoundError("Book not found"));
 
-  const payload = req.body as any;
+  const payload = req.body as Partial<Book>;
 
   // if authorId is provided, ensure it exists
   if (payload.authorId) {
@@ -144,14 +136,15 @@ router.put("/:id", validate(updateBookSchema), (req, res, next) => {
     if (conflict) return next(new ConflictError("Another book with same title exists for this author"));
   }
 
-  const updated = { ...books[idx], ...payload, year: extractYear({ ...books[idx], ...payload }) };
+  const updated: Book = { ...books[idx], ...payload, year: extractYear({ ...books[idx], ...payload }) };
   books[idx] = updated;
   res.json(updated);
 });
 
-// Delete Book
-router.delete("/:id", (req, res, next) => {
-  const idx = books.findIndex((b) => b.id === req.params.id);
+// DELETE BOOK
+router.delete("/:id", (req: Request, res: Response, next: NextFunction) => {
+  const id = parseInt(req.params.id, 10);
+  const idx = books.findIndex((b) => b.id === id);
   if (idx === -1) return next(new NotFoundError("Book not found"));
   const deleted = books.splice(idx, 1)[0];
   res.json({ deleted });

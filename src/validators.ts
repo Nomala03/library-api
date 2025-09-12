@@ -1,19 +1,23 @@
 import { z } from "zod";
 
+// Create Author
 export const createAuthorSchema = z.object({
-  name: z.string().min(1, "name is required"),
-  bio: z.string().optional(),
-  birthDate: z.string().optional(), // allow loose date formats; further checks can be added
+  name: z.string().min(1, "Name is required"),
 });
 
-export const updateAuthorSchema = createAuthorSchema.partial();
+// Update Author
+export const updateAuthorSchema = z.object({
+  name: z.string().min(1).optional(),
+});
 
+// Create Book
 export const createBookSchema = z.object({
-  title: z.string().min(1, "title is required"),
-  authorId: z.string().min(1, "authorId is required"),
-  publishedAt: z.string().optional(),
-  pages: z.number().int().positive().optional(),
-  summary: z.string().optional(),
+  title: z.string().min(1, "Title is required"),
+  authorId: z.number().int().positive(),
 });
 
-export const updateBookSchema = createBookSchema.partial();
+// Update Book
+export const updateBookSchema = z.object({
+  title: z.string().min(1).optional(),
+  authorId: z.number().int().positive().optional(),
+});

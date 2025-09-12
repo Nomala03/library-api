@@ -1,11 +1,12 @@
 import { ZodType, ZodError } from "zod";
 import { Request, Response, NextFunction } from "express";
 
-/**
- * validate(schema) - returns middleware to validate req.body with Zod
- * If invalid, passes a ZodError to next() so centralized error handler returns 400.
+/*
+  validate(schema) - returns middleware to validate req.body with Zod
+  If invalid, passes a ZodError to next() so centralized error handler returns 400.
  */
-export function validate(schema: ZodType<any>) {
+
+export function validate(schema: ZodType<unknown>) {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       // parse will throw if invalid

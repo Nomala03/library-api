@@ -9,7 +9,7 @@ const router = express.Router();
 // Create Author
 router.post("/", validate(createAuthorSchema), (req, res) => {
   const payload = req.body as any;
-  const author = createAuthor(payload);
+  const author = createAuthor(payload); 
   authors.push(author);
   res.status(201).json(author);
 });
@@ -21,24 +21,27 @@ router.get("/", (_req, res) => {
 
 // Get Author By ID
 router.get("/:id", (req, res, next) => {
-  const a = authors.find((x) => x.id === req.params.id);
+  const id = Number(req.params.id); // convert to number
+  const a = authors.find((a) => a.id === id);
   if (!a) return next(new NotFoundError("Author not found"));
   res.json(a);
 });
 
 // Update Author
 router.put("/:id", validate(updateAuthorSchema), (req, res, next) => {
-  const idx = authors.findIndex((x) => x.id === req.params.id);
-  if (idx === -1) return next(new NotFoundError("Author not found"));
-  authors[idx] = { ...authors[idx], ...req.body };
-  res.json(authors[idx]);
+  const id = Number(req.params.id);
+  const index = authors.findIndex((a) => a.id === id);
+  if (index === -1) return next(new NotFoundError("Author not found"));
+  authors[index] = { ...authors[index], ...req.body };
+  res.json(authors[index]);
 });
 
 // Delete Author (also remove their books)
 router.delete("/:id", (req, res, next) => {
-  const idx = authors.findIndex((x) => x.id === req.params.id);
-  if (idx === -1) return next(new NotFoundError("Author not found"));
-  const deleted = authors.splice(idx, 1)[0];
+  const id = Number(req.params.id);
+  const index = authors.findIndex((a) => a.id === id);
+  if (index === -1) return next(new NotFoundError("Author not found"));
+  const deleted = authors.splice(index, 1)[0];
 
   // remove their books
   for (let i = books.length - 1; i >= 0; i--) {
@@ -50,10 +53,12 @@ router.delete("/:id", (req, res, next) => {
 
 // List Books By an Author
 router.get("/:id/books", (req, res, next) => {
-  const author = authors.find((a) => a.id === req.params.id);
+  const id = Number(req.params.id);
+  const author = authors.find((a) => a.id === id);
   if (!author) return next(new NotFoundError("Author not found"));
-  const list = books.filter((b) => b.authorId === author.id);
+  const list = books.filter((b) => b.authorId === id);
   res.json(list);
 });
 
 export default router;
+
